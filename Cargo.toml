@@ -1,0 +1,18 @@
+[package]
+name = "pick-a-boo"
+version = "0.1.0"
+edition = "2024"
+authors = [
+    "Haruaki Tamada <tamada@users.noreply.github.com>"
+]
+description = "A simple options picker library for the CLI"
+license = "MIT"
+repository = "https://github.com/tamada/pick-a-boo"
+homepage = "https://github.com/tamada/pick-a-boo"
+keywords = ["yes-or-no", "cli", "options", "choices"]
+documentation = "https://docs.rs/pick-a-boo"
+categories = ["command-line-interface", "command-line-utilities"]
+
+[dependencies]
+crossterm = "0.29.0"
+derive_builder = "0.20.2"
