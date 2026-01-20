@@ -1,0 +1,41 @@
+name: update version
+
+on:
+  push:
+    branches:
+      - "releases/v*"
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get tags
+        id: vars
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "tag=${GITHUB_REF##*/v}" >> $GITHUB_OUTPUT
+          echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+      - name: Update Version
+        run: |
+          cargo install bump2version
+          bump2version --new-version ${{ steps.vars.outputs.tag }}
+
+      - name: Initialize git
+        run: |
+          git config --global user.name  "GitHub Actions"
+          git config --global user.email "action@github.com"
+          auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+
+      - name: Commit the Changes
+        run: 
+          git commit -a -m "update version to ${{ steps.vars.outputs.tag }}, ready to publish v${{ steps.vars.outputs.tag }}" || true
+
+      - name: Push Changes to Branch
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ steps.vars.outputs.branch }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
