@@ -165,8 +165,8 @@ impl From<&str> for Item {
     }
 }
 
-impl From<&String> for Item {
-    fn from(s: &String) -> Self {
+impl From<String> for Item {
+    fn from(s: String) -> Self {
         Item::parse(s)
     }
 }
@@ -188,7 +188,9 @@ type ErrBox = Box<dyn std::error::Error + Send + Sync>;
 ///     .item(Item::new("Yes", 'y', Some("I love it")))
 ///     .item(item!("So so", description = "I like it, but sometimes it's hard")) 
 ///     .item(item!("Maybe", key = 'm', description = "I haven't tried it yet"))
-///     .item(item!("No", 'n', "I don't like it"));
+///     .item(item!("No", 'n', "I don't like it"))
+///     .current(1) // set the default selected index to 1 ("So so")
+///     .build().unwrap();
 /// ```
 /// 
 /// ### Example: Create an instance from a slice of strings
@@ -218,11 +220,7 @@ pub struct Options {
 
 fn validate_options(options: &OptionsBuilder) -> Result<(), ErrBox> {
     let items = options.items.as_ref().ok_or("items must be set")?;
-    let current = if let Some(current) = options.current {
-        current
-    } else {
-        0
-    };
+    let current = options.current.unwrap_or(0);
     validate_option_items(items, current)
 }
 
@@ -254,7 +252,7 @@ impl Options {
     /// Helper method to create Options instance from a slice of strings.
     /// Each item of the slice is converted with [`Item::parse`] method.
     pub fn from<S: AsRef<str>>(items: &[S]) -> Result<Self, ErrBox> {
-        let item_vec = items.iter().map(|s| Item::parse(s)).collect::<Vec<_>>();
+        let item_vec = items.iter().map(Item::parse).collect::<Vec<_>>();
         validate_option_items(&item_vec, 0)?;
         Ok(Options {
             items: item_vec,
@@ -328,13 +326,60 @@ impl std::fmt::Display for Display<'_, '_> {
 }
 
 /// DescriptionShowMode enum defines how item descriptions are displayed.
+/// 
+/// ### Example
+/// 
+/// Based following definition of options, it illustrates the differences in display modes.
+/// 
+/// ```rust
+/// use pick_a_boo::{item, OptionsBuilder};
+/// let opts = OptionsBuilder::default()
+///     .item(item!("Yes", 'y', "I love it"))
+///     .item(item!("So so", description = "I like it, but sometimes it's hard"))
+///     .item(item!("Maybe", key = 'm', description = "I haven't tried it yet"))
+///     .item(item!("No", 'n', "I don't like it"))
+///     .build().unwrap();
+/// ```
 #[derive(Debug, Clone)]
 pub enum DescriptionShowMode {
-    /// descriptions are never shown
+    /// Descriptions are never shown.
+    /// Default mode. 
+    /// 
+    /// ```text
+    /// Do you like Rust?  Yes /s/m/n
+    /// ```
     Never,
-    /// only the current item's description is shown
+    /// Only the current item's description is shown.
+    /// 
+    /// ```text
+    /// Do you like Rust?  Yes /s/m/n
+    ///   Yes    I love it
+    /// ```
+    /// 
+    /// Other item is selected:
+    /// ```text
+    /// Do you like Rust?  y/s/ Maybe /n
+    ///   Maybe  I haven't tried it yet 
+    /// ```
     CurrentOnly,
-    /// all item descriptions are shown
+    /// All item descriptions are shown.
+    /// 
+    /// ```text
+    /// Do you like Rust?  Yes /s/m/n
+    /// > Yes    I love it
+    ///   So so  I like it, but sometimes it's hard
+    ///   Maybe  I haven't tried it yet
+    ///   No     I don't like it
+    /// ```
+    /// 
+    /// Other item is selected:
+    /// ```text
+    /// Do you like Rust?  y/s/ Maybe /n
+    ///   Yes    I love it
+    ///   So so  I like it, but sometimes it's hard
+    /// > Maybe  I haven't tried it yet
+    ///   No     I don't like it
+    /// ```
     All,
 }
 
@@ -351,62 +396,121 @@ pub enum DescriptionNameWidth {
 }
 
 /// Picker struct is the main interface for choosing options.
-/// It holds configuration for the picker behavior.
+/// It holds the following configuration for the picker behavior.
 /// 
 /// ### Example
 /// 
-/// ```rust
-/// use pick_a_boo::{item, PickerBuilder};
-/// 
+/// ```text
+/// Do you like Rust? [Yes /s/m/n]
+/// > Yes    I love it
+///   So so  I like it, but sometimes it's hard
+///   Maybe  I haven't tried it yet
+///   No     I don't like it
 /// ```
 #[derive(Debug, Builder)]
 #[builder(build_fn(error = "ErrBox"))]
 pub struct Picker {
+    /// Delimiter string used to separate options in the display.
+    /// Defaults to "/".
+    /// 
+    /// The following example is using " | " as the delimiter:
+    /// 
+    /// ```text
+    /// Do you like Rust? [Yes |s|m|n]
+    /// ```
     #[builder(default = "/".to_string(), setter(into))]
-    delimiter: String,
+    pub delimiter: String,
     #[builder(default = false)]
-    alternate_screen: bool,
+    /// Whether to use the alternate screen for the picker.
+    /// Default is `false`.
+    /// If `true`, the picker will switch to the alternate screen.
+    /// 
+    /// For more details, see [crossterm::terminal::EnterAlternateScreen].
+    pub alternate_screen: bool,
     #[builder(default = false)]
-    allow_wrap: bool,
+    /// Whether to allow wrapping around when navigating options.
+    /// Default is `false`.
+    /// If `true`, navigating past the last option will wrap around to the first option,
+    /// and vice versa.
+    pub allow_wrap: bool,
     #[builder(default = None, setter(strip_option, into, custom))]
-    paren: Option<(String, String)>,
+    /// Parentheses to enclose the options display.
+    /// If `None`, no parentheses are used.
+    /// If `Some((left, right))`, the options will be enclosed with the specified left and right strings.
+    /// 
+    /// In the [`PickerBuilder`], use the `paren(AsRef<str>)` method to set this field.
+    /// see [PickerBuilder::paren] for details.
+    pub paren: Option<(String, String)>,
+    /// Mode for showing item descriptions. Default is [`DescriptionShowMode::Never`].
+    /// see [`DescriptionShowMode`] for details.
     #[builder(default = DescriptionShowMode::Never)]
-    description_show_mode: DescriptionShowMode,
+    pub description_show_mode: DescriptionShowMode,
+    /// Width setting for item names when displaying descriptions.
+    /// Default is [`DescriptionNameWidth::Auto`].
+    /// see [`DescriptionNameWidth`] for details.
     #[builder(default = DescriptionNameWidth::Auto, setter(into))]
-    description_name_width: DescriptionNameWidth,
+    pub description_name_width: DescriptionNameWidth,
 }
 
 impl PickerBuilder {
+    /// If the given string has an even length, it will be split into two equal halves for left and right parentheses.
+    /// Otherwise, the entire string will be used as the left parenthesis, and the right parenthesis will be an empty string.
+    /// 
+    /// For example:
+    /// - `paren("()")` sets parentheses to `Some(("(", ")"))`.
+    /// - `paren("[]")` sets parentheses to `Some(("[", "]"))`.
+    /// - `paren("[[]]")` sets parentheses to `Some(("[[", "]]"))`.
+    /// - `paren(":")` sets parentheses to `Some((":", ""))`.
+    /// - `paren(":::")` sets parentheses to `Some((":::", ""))`.
+    /// - `paren("")` sets parentheses to `Some(("", ""))`.
+    /// - Not calling `paren` leaves it as `None`.
     pub fn paren<T: AsRef<str>>(&mut self, paren: T) -> &mut Self {
         let paren = paren.as_ref().to_string();
         if paren.is_empty() {
             self.paren = Some(None);
-            return self;
-        } else if paren.len() != 2 {
+            self
+        } else if paren.len() % 2 != 0 {
             self.paren = Some(Some((paren, "".to_string())));
             self
         } else {
-            let mut chars = paren.chars();
-            let left = chars.next().unwrap();
-            let right = chars.next().unwrap();
-            self.paren = Some(Some((left.to_string(), right.to_string())));
+            let len = paren.len() / 2;
+            let l = paren.chars().take(len).collect::<String>();
+            let r = paren.chars().skip(len).collect::<String>();
+            self.paren = Some(Some((l, r)));
             self
         }
     }
 }
 
 impl Default for Picker {
+    /// Create a default Picker instance, it equivalent the following code.
+    /// 
+    /// ```rust
+    /// pick_a_boo::PickerBuilder::default()
+    ///     .delimiter("/")
+    ///     .alternate_screen(false)
+    ///     .allow_wrap(false)
+    ///     // .paren("")  // None by default
+    ///     .description_show_mode(pick_a_boo::DescriptionShowMode::Never)
+    ///     .description_name_width(pick_a_boo::DescriptionNameWidth::Auto)
+    ///     .build().expect("Failed to build Picker");
+    /// ```
     fn default() -> Self {
         PickerBuilder::default()
-            .build().unwrap()
+            .build().expect("Failed to build Picker")
     }
 }
 
 impl Picker {
+    /// Choose an option from the provided [Options] with the given prompt.
+    /// Returns `Ok(Some(String))` for the selected option name, and `Ok(None)` if cancelled.
     pub fn choose(&mut self, prompt: &str, options: Options) -> std::io::Result<Option<String>> {
         routine::choose(self, prompt, options)
     }
 
+    /// Ask a yes-or-no question with the given prompt.
+    /// The `default_yes` parameter determines the default selection.
+    /// Returns `Ok(Some(true))` for "Yes", `Ok(Some(false))` for "No", and `Ok(None)` if cancelled.
     pub fn yes_or_no(&mut self, prompt: &str, default_yes: bool) -> std::io::Result<Option<bool>> {
         let yes_item = Item::new("Yes", 'y', None);
         let no_item = Item::new("No", 'n', None);
@@ -414,7 +518,7 @@ impl Picker {
             .item(yes_item)
             .item(no_item)
             .current(if default_yes { 0 } else { 1 })
-            .build().map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e))?;
+            .build().map_err(std::io::Error::other)?;
         let answer = self.choose(prompt, options);
         match answer {
             Ok(Some(choice)) if choice == "Yes" => Ok(Some(true)),
@@ -426,11 +530,31 @@ impl Picker {
     }
 }
 
+/// Helper function to ask a yes-or-no question with the given prompt.
+/// This routine is a shortcut for creating a default [Picker] instance and
+/// calling its [Picker::yes_or_no] method.
+/// 
+/// ```rust
+/// fn run_yes_or_no(prompt: &str, default_yes: bool) -> std::io::Result<Option<bool>> {
+///     pick_a_boo::Picker::default()
+///         .yes_or_no(prompt, default_yes)
+/// }
+/// ```
 pub fn yes_or_no(prompt: &str, default_yes: bool) -> std::io::Result<Option<bool>> {
     Picker::default()
         .yes_or_no(prompt, default_yes)
 }
 
+/// Hellper function to choose an option from the provided [Options] with the given prompt.
+/// This routine is a shortcut for creating a default [Picker] instance and
+/// calling its [Picker::choose] method.
+/// 
+/// ```rust
+/// fn run_pick_a_boo(prompt: &str, options: pick_a_boo::Options) -> std::io::Result<Option<String>> {
+///     pick_a_boo::Picker::default()
+///         .choose(prompt, options)
+/// }
+/// ```
 pub fn choose(prompt: &str, options: Options) -> std::io::Result<Option<String>> {
     Picker::default()
         .choose(prompt, options)
@@ -457,10 +581,49 @@ mod tests {
     }
 
     #[test]
+    fn test_optionsbuilder_empty_items() {
+        let result = crate::OptionsBuilder::default()
+            .build();
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn test_optionsbuilder_no_items() {
         let result = crate::OptionsBuilder::default()
             .build();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_from_str() {
+        let it: crate::Item = "Sample".into();
+        assert_eq!(it.name, "Sample");
+        assert_eq!(it.key, 's');
+        assert!(it.description.is_none());
+    }
+
+    #[test]
+    fn test_from_string() {
+        let it: crate::Item = String::from("Example: This is example").into();
+        assert_eq!(it.name, "Example");
+        assert_eq!(it.key, 'e');
+        assert_eq!(it.description.as_deref(), Some("This is example"));
+    }
+
+    #[test]
+    fn test_item_parse_without_description() {
+        let it = crate::Item::parse("Example");
+        assert_eq!(it.name, "Example");
+        assert_eq!(it.key, 'e');
+        assert!(it.description.is_none());
+    }
+
+    #[test]
+    fn test_item_parse_with_description() {
+        let it = crate::Item::parse("Test: This is just test");
+        assert_eq!(it.name, "Test");
+        assert_eq!(it.key, 't');
+        assert_eq!(it.description.as_deref(), Some("This is just test"));
     }
 
     #[test]

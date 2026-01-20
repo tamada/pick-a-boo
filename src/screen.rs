@@ -6,30 +6,34 @@ use crate::{DescriptionShowMode, Options, Picker};
 
 pub(crate) fn new(picker: &Picker, opts: &Options, stdout: &mut std::io::Stdout) -> std::io::Result<Screen> {
     if picker.alternate_screen {
-        Ok(Screen::Alternae(Alternae::new(stdout)?))
+        Ok(Screen::A(Alternate::new(stdout)?))
     } else {
-        Ok(Screen::Keep(NullGuard::new(picker, opts.items.len(), stdout)?))
+        Ok(Screen::K(Keeper::new(picker, opts.items.len(), stdout)?))
     }
 }
 
 pub(super) enum Screen {
-    Alternae(Alternae),
-    Keep(NullGuard),
+    /// Alternate screen mode.
+    /// use crossterm's `EnterAlternateScreen` and `LeaveAlternateScreen`
+    A(Alternate),
+    /// Keeper mode.
+    /// keeps the original screen content, and the outputs of this library below them.
+    K(Keeper),
 }
 
 impl Screen {
     pub(crate) fn prepare_write(&mut self, stdout: &mut std::io::Stdout) -> std::io::Result<()> {
         match self {
-            Screen::Alternae(g) => g.prepare_write(stdout),
-            Screen::Keep(g) => g.prepare_write(stdout),
+            Screen::A(g) => g.prepare_write(stdout),
+            Screen::K(g) => g.prepare_write(stdout),
         }
     }
 }
 
-pub(super) struct NullGuard{
+pub(super) struct Keeper{
 }
 
-impl NullGuard {
+impl Keeper {
     fn new(picker: &Picker, opts_len: usize, stdout: &mut std::io::Stdout) -> std::io::Result<Self> {
         let mode = picker.description_show_mode.clone();
         let up = match mode {
@@ -54,7 +58,7 @@ impl NullGuard {
     }
 }
 
-impl Drop for NullGuard {
+impl Drop for Keeper {
     fn drop(&mut self) {
         let _ = execute!(std::io::stdout(), cursor::Show);
         terminal::disable_raw_mode().ok();
@@ -62,9 +66,9 @@ impl Drop for NullGuard {
     }
 }
 
-pub(super) struct Alternae;
+pub(super) struct Alternate;
 
-impl Alternae {
+impl Alternate {
     fn new(stdout: &mut std::io::Stdout) -> std::io::Result<Self> {
         terminal::enable_raw_mode()?;
         queue!(stdout, cursor::Hide, terminal::EnterAlternateScreen, cursor::MoveTo(0, 0), cursor::SavePosition)?;
@@ -80,7 +84,7 @@ impl Alternae {
     }
 }
 
-impl Drop for Alternae {
+impl Drop for Alternate {
     fn drop(&mut self) {
         let _ = execute!(std::io::stdout(), cursor::Show, terminal::LeaveAlternateScreen);
         let _ = terminal::disable_raw_mode();
