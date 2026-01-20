@@ -21,7 +21,7 @@ jobs:
 
       - name: Update Version
         run: |
-          sed "s/^version = \".*\"/version = \"${{ steps.vars.outputs.tag }}\"" Cargo.toml > a ; mv a Cargo.toml
+          sed "s!^version = \".*\"!version = \"${{ steps.vars.outputs.tag }}\"!" Cargo.toml > a ; mv a Cargo.toml
           sed "s!badge/Version-v.*-green!badge/Version-v${{ steps.vars.outputs.tag }}-green!" README.md > a ; mv a README.md
           sed "s!releases/tag/v.*)!releases/tag/v${{ steps.vars.outputs.tag }})!" README.md > a ; mv a README.md
 
