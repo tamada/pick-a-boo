@@ -28,6 +28,7 @@ jobs:
 
       - name: Build and calculate coverage
         run: |
+          cargo clippy -- -D warnings
           cargo build --release
           cargo llvm-cov --lcov --output-path target/coverage.lcov
 
