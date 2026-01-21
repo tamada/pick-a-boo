@@ -12,6 +12,7 @@ homepage = "https://github.com/tamada/pick-a-boo"
 keywords = ["yes-or-no", "cli", "options", "choices"]
 documentation = "https://docs.rs/pick-a-boo"
 categories = ["command-line-interface", "command-line-utilities"]
+exclude = [ ".github", ".gitignore" ]
 
 [dependencies]
 crossterm = "0.29.0"
