@@ -1,0 +1,42 @@
+name: update version
+
+on:
+  push:
+    branches:
+      - "releases/v*"
+
+jobs:
+  update-version:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get tags
+        id: vars
+        run: |
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "tag=${GITHUB_REF##*/v}" >> $GITHUB_OUTPUT
+          echo "branch=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+      - name: Update Version
+        run: |
+          sed "s!^version = \".*\"!version = \"${{ steps.vars.outputs.tag }}\"!" Cargo.toml > a ; mv a Cargo.toml
+          sed "s!badge/Version-v.*-green!badge/Version-v${{ steps.vars.outputs.tag }}-green!" README.md > a ; mv a README.md
+          sed "s!releases/tag/v.*)!releases/tag/v${{ steps.vars.outputs.tag }})!" README.md > a ; mv a README.md
+
+      - name: Initialize git
+        run: |
+          git config --global user.name  "GitHub Actions"
+          git config --global user.email "action@github.com"
+          auth_header="$(git config --local --get http.https://github.com/.extraheader)"
+
+      - name: Commit the Changes
+        run: 
+          git commit -a -m "update version to ${{ steps.vars.outputs.tag }}, ready to publish v${{ steps.vars.outputs.tag }}" || true
+
+      - name: Push Changes to Branch
+        uses: ad-m/github-push-action@master
+        with:
+          branch: ${{ steps.vars.outputs.branch }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}

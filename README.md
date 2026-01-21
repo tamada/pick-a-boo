@@ -1,5 +1,12 @@
 # pick-a-boo
 
+[![build](https://github.com/tamada/pick-a-boo/actions/workflows/build.yaml/badge.svg)](https://github.com/tamada/pick-a-boo/actions/workflows/build.yaml)
+[![Coverage Status](https://coveralls.io/repos/github/tamada/pick-a-boo/badge.svg?branch=main)](https://coveralls.io/github/tamada/pick-a-boo?branch=main)
+[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/tamada/pick-a-boo)](https://rust-reportcard.xuri.me/report/github.com/tamada/pick-a-boo)
+
+[![Version](https://img.shields.io/badge/Version-v0.1.0-green)](https://github.com/tamada/pick-a-boo/releases/tag/v0.1.0)
+[![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/pick-a-boo/blob/main/LICENSE)
+
 A simple terminal picker library for Rust.
 
 This library is inspired by [`AntoineRenaud91/yes-or-no`](https://github.com/AntoineRenaud91/yes-or-no), and
