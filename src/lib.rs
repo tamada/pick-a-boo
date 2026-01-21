@@ -190,7 +190,7 @@ type ErrBox = Box<dyn std::error::Error + Send + Sync>;
 ///     .item(item!("Maybe", key = 'm', description = "I haven't tried it yet"))
 ///     .item(item!("No", 'n', "I don't like it"))
 ///     .current(1) // set the default selected index to 1 ("So so")
-///     .build().unwrap();
+///     .build().expect("Failed to build Options");
 /// ```
 /// 
 /// ### Example: Create an instance from a slice of strings
@@ -338,7 +338,7 @@ impl std::fmt::Display for Display<'_, '_> {
 ///     .item(item!("So so", description = "I like it, but sometimes it's hard"))
 ///     .item(item!("Maybe", key = 'm', description = "I haven't tried it yet"))
 ///     .item(item!("No", 'n', "I don't like it"))
-///     .build().unwrap();
+///     .build().expect("Failed to build Options");
 /// ```
 #[derive(Debug, Clone)]
 pub enum DescriptionShowMode {
@@ -466,6 +466,7 @@ impl PickerBuilder {
     /// - Not calling `paren` leaves it as `None`.
     pub fn paren<T: AsRef<str>>(&mut self, paren: T) -> &mut Self {
         let paren = paren.as_ref().to_string();
+        log::info!("Setting paren: {paren}");
         if paren.is_empty() {
             self.paren = Some(None);
             self
@@ -496,6 +497,7 @@ impl Default for Picker {
     ///     .build().expect("Failed to build Picker");
     /// ```
     fn default() -> Self {
+        log::info!("Building default Picker");
         PickerBuilder::default()
             .build().expect("Failed to build Picker")
     }
@@ -505,6 +507,7 @@ impl Picker {
     /// Choose an option from the provided [Options] with the given prompt.
     /// Returns `Ok(Some(String))` for the selected option name, and `Ok(None)` if cancelled.
     pub fn choose(&mut self, prompt: &str, options: Options) -> std::io::Result<Option<String>> {
+        log::info!("Picker choosing with prompt: {prompt}");
         routine::choose(self, prompt, options)
     }
 
@@ -512,6 +515,7 @@ impl Picker {
     /// The `default_yes` parameter determines the default selection.
     /// Returns `Ok(Some(true))` for "Yes", `Ok(Some(false))` for "No", and `Ok(None)` if cancelled.
     pub fn yes_or_no(&mut self, prompt: &str, default_yes: bool) -> std::io::Result<Option<bool>> {
+        log::info!("Picker yes_or_no with prompt: {prompt}");
         let yes_item = Item::new("Yes", 'y', None);
         let no_item = Item::new("No", 'n', None);
         let options = OptionsBuilder::default()

@@ -14,6 +14,7 @@ enum Action {
 
 /// Ensure that both stdin and stdout are TTYs.
 fn ensure_tty(stdout: std::io::Stdout) -> std::io::Result<std::io::Stdout> {
+    log::info!("Ensuring TTY for stdin and stdout");
     if !stdout.is_terminal() || !std::io::stdin().is_terminal() {
         Err(std::io::Error::other(
             "not running on a TTY (interactive input is unavailable)",
@@ -32,6 +33,7 @@ pub(crate) fn choose(
     let mut guard = screen::new(picker, &options, &mut stdout)?;
     let mut opts = options;
     let (paren_left, paren_right) = paren_strings(picker);
+    log::info!("Starting choice loop");
 
     loop {
         guard.prepare_write(&mut stdout)?;
@@ -120,6 +122,7 @@ fn write_all_descriptions(stdout: &mut std::io::Stdout, opts: &Options, name_wid
 /// Process a key event and return the resulting action.
 /// This is the pure logic extracted for testability.
 fn process_key(key_code: KeyCode, modifiers: KeyModifiers, options: &Options) -> Action {
+    log::info!("Processing key: {:?} with modifiers: {:?}", key_code, modifiers);
     if let KeyCode::Char(c) = key_code {
         if c == 'c' && modifiers.contains(KeyModifiers::CONTROL) {
             Action::Cancel

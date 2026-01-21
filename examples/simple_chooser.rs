@@ -1,6 +1,7 @@
 fn main() -> std::io::Result<()> {
     let options = pick_a_boo::Options::from(
-        &vec!["Yes", "Maybe", "So so", "No"]).unwrap();
+        &vec!["Yes", "Maybe", "So so", "No"])
+        .expect("Failed to create Options");
     let answer = pick_a_boo::choose(
         "Do you like Rust?", options);
     match answer {
