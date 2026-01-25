@@ -43,4 +43,4 @@ jobs:
         run: |
           git tag v${{ steps.vars.outputs.tag }}
           git push origin v${{ steps.vars.outputs.tag }}
-          cargo publish -p totebag
+          cargo publish
