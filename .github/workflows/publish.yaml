@@ -1,0 +1,32 @@
+name: publish_site_release_assets
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    if: startsWith(github.head_ref, 'releases/v') && github.event.pull_request.merged == true
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Git Tag name
+        id: vars
+        run: |
+          echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF (${GITHUB_HEAD_REF##*/v})"
+          echo "tag=${GITHUB_HEAD_REF##*/v}" >> $GITHUB_OUTPUT
+      - name: Checkout the project
+        uses: actions/checkout@v4
+      - name: Authenticate with custom registry
+        id: auth
+        uses: rust-lang/crates-io-auth-action@v1
+      - name: publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git tag v${{ steps.vars.outputs.tag }}
+          git push origin v${{ steps.vars.outputs.tag }}
+          cargo publish -p totebag

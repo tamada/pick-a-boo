@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/tamada/pick-a-boo/badge.svg?branch=main)](https://coveralls.io/github/tamada/pick-a-boo?branch=main)
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/tamada/pick-a-boo)](https://rust-reportcard.xuri.me/report/github.com/tamada/pick-a-boo)
 
-[![Version](https://img.shields.io/badge/Version-v0.1.0-green)](https://github.com/tamada/pick-a-boo/releases/tag/v0.1.0)
+[![Version](https://img.shields.io/badge/Version-v0.1.1-green)](https://github.com/tamada/pick-a-boo/releases/tag/v0.1.1)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/pick-a-boo/blob/main/LICENSE)
 
 A simple terminal picker library for Rust.
@@ -32,7 +32,8 @@ To build them, run `cargo build --examples`, then the `cargo` puts the executabl
 ```rust
 fn main() -> std::io::Result<()> {
     let options = pick_a_boo::Options::from(
-        &vec!["Yes", "Maybe", "So so", "No"]).unwrap();
+        &vec!["Yes", "Maybe", "So so", "No"])
+        .expect("Failed to create Options");
     let answer = pick_a_boo::choose(
         "Do you like Rust?", options);
     match answer {
@@ -68,13 +69,13 @@ fn main() -> std::io::Result<()> {
         .item(pick_a_boo::item!("So so", key = '😄', description = "I like it, but sometimes it's hard"))
         .item(pick_a_boo::item!("Maybe", key = '😅', description = "I haven't tried it yet"))
         .item(pick_a_boo::item!("No", '😔', "I don't like it"))
-        .build().unwrap();
+        .build().expect("Failed to build Options");
     let mut picker = pick_a_boo::PickerBuilder::default()
         .alternate_screen(true)
         .allow_wrap(true)
         .description_show_mode(pick_a_boo::DescriptionShowMode::All)
         .description_name_width(pick_a_boo::DescriptionNameWidth::Auto)
-        .build().expect("");
+        .build().expect("Failed to build Picker");
 
     let answer = picker.choose("Do you like Rust?", options)?;
     match answer {

@@ -4,7 +4,7 @@ fn main() -> std::io::Result<()> {
         .item(pick_a_boo::item!("So so", description = "I like it, but sometimes it's hard"))
         .item(pick_a_boo::item!("Maybe", key = 'm', description = "I haven't tried it yet"))
         .item(pick_a_boo::item!("No", 'n', "I don't like it"))
-        .build().unwrap();
+        .build().expect("Failed to build Options");
     let mut picker = pick_a_boo::Picker::default();
 
     let answer = picker.choose("Do you like Rust?", options)?;
