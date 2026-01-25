@@ -1,4 +1,4 @@
-name: publish_site_release_assets
+name: publish_crate
 on:
   pull_request:
     branches:
@@ -21,17 +21,17 @@ jobs:
           echo "GITHUB_HEAD_REF: $GITHUB_HEAD_REF (${GITHUB_HEAD_REF##*/v})"
           echo "tag=${GITHUB_HEAD_REF##*/v}" >> $GITHUB_OUTPUT
 
+      - name: Checkout the project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Initialize Git
         shell: bash
         run: |
           git config --global user.name  "GitHub Actions"
           git config --global user.email "action@github.com"
           auth_header="$(git config --local --get http.https://github.com/.extraheader)"
-
-      - name: Checkout the project
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Authenticate with custom registry
         id: auth
