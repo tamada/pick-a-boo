@@ -4,7 +4,7 @@
 [![Coverage Status](https://coveralls.io/repos/github/tamada/pick-a-boo/badge.svg?branch=main)](https://coveralls.io/github/tamada/pick-a-boo?branch=main)
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/tamada/pick-a-boo)](https://rust-reportcard.xuri.me/report/github.com/tamada/pick-a-boo)
 
-[![Version](https://img.shields.io/badge/Version-v0.1.1-green)](https://github.com/tamada/pick-a-boo/releases/tag/v0.1.1)
+[![Version](https://img.shields.io/badge/Version-v0.1.2-green)](https://github.com/tamada/pick-a-boo/releases/tag/v0.1.2)
 [![License](https://img.shields.io/badge/License-MIT-green)](https://github.com/tamada/pick-a-boo/blob/main/LICENSE)
 
 A simple terminal picker library for Rust.
