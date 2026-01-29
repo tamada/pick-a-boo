@@ -163,7 +163,7 @@ impl Item {
     /// The key is derived from the first character of the name, converted to lowercase.
     /// If an uppercase key is desired, use the [`Item::new`] method or the [`item!`] macro.
     /// 
-    /// The given string should formatted as "LongLabel[(ShortKey)][: Description]".
+    /// The given string should be formatted as "LongLabel[(ShortKey)][: Description]".
     /// If the colon `:` is present, the part after it is treated as the description.
     /// If not, the description is `None`.
     /// Also, `ShortKey` is optional and if it is not provided, the `ShortKey` is derived from the first character of the `LongLabel`.
@@ -738,11 +738,11 @@ mod tests {
 
     #[test]
     fn test_macro_item_9() {
-        let it = item!("Iota", short = "A", description = "The nineth letter");
+        let it = item!("Iota", short = "A", description = "The ninth letter");
         assert_eq!(it.long_label, "Iota");
         assert_eq!(it.short_label, "A");
         assert_eq!(it.key, 'A');
-        assert_eq!(it.description.as_deref(), Some("The nineth letter"));
+        assert_eq!(it.description.as_deref(), Some("The ninth letter"));
     }
 
     #[test]
