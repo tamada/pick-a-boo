@@ -9,6 +9,7 @@ authors = [
     "Haruaki Tamada <tamada@users.noreply.github.com>"
 ]
 categories = ["command-line-interface", "command-line-utilities"]
+keywords = [ "macro", "ask", "cli", "interactive", "prompt", "question" ]
 
 [lib]
 proc-macro = true
