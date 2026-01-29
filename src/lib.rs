@@ -62,7 +62,7 @@ extern crate self as pick_a_boo;
 /// The number of positional arguments can be from 1 to 4.
 /// 
 /// ```rust
-/// use pick_a_boo::item;/// 
+/// use pick_a_boo::item;
 /// item!("LongName");                                  // only long name
 /// item!("LongName", "ShortName");                     // long name and short name
 /// item!("LongName", "ShortName", "Description");      // long name, short name, and description
