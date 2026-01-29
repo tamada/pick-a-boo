@@ -17,6 +17,7 @@
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse::{Parse, ParseStream}, parse_macro_input, Expr, Ident, Token, Result};
+use syn::spanned::Spanned;
 
 struct ItemInput {
     long: Expr,
@@ -100,7 +101,11 @@ pub fn item(input: TokenStream) -> TokenStream {
             "short" => short = quote! { Some(#val.to_string()) },
             "key" => key = quote! { Some(#val) },
             "description" => desc = quote! { Some(#val.to_string()) },
-            _ => { todo!("generate compile errors") }
+            _ => {
+                return syn::Error::new(name.span(), format!("Unknown argument name: {name}"))
+                    .to_compile_error()
+                    .into();
+            }
         }
     }
 
