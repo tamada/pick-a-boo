@@ -1,8 +1,14 @@
 [package]
 name = "pick-a-boo-macros"
+description = "procedural macros for the `pick-a-boo` crate"
 version = "0.1.0"
 edition = "2021"
 publish = true
+license-file = "LICENSE"
+authors = [
+    "Haruaki Tamada <tamada@users.noreply.github.com>"
+]
+categories = ["command-line-interface", "command-line-utilities"]
 
 [lib]
 proc-macro = true
