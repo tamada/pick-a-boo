@@ -55,8 +55,8 @@ pub fn item(input: TokenStream) -> TokenStream {
     let path = quote! { ::pick_a_boo };
 
     // Conditional branching based on the number of positional arguments)
-    if input.named_args.len() == 0 {
-        if input.positional_args.len() == 0 {
+    if input.named_args.is_empty() {
+        if input.positional_args.is_empty() {
             return quote! { #path::Item::parse(#long) }.into();
         }
         if input.positional_args.len() == 1 {

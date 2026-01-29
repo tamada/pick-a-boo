@@ -148,10 +148,10 @@ impl Item {
         let description = description.map(|d| d.as_ref().to_string());
         log::info!("create Item instance with new_full({long_label}, {short_label}, {key}, {description:?})");
         Item {
-            long_label: long_label,
-            short_label: short_label,
+            long_label,
+            short_label,
             key,
-            description: description,
+            description,
         }
     }
 

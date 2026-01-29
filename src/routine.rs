@@ -122,7 +122,7 @@ fn write_all_descriptions(stdout: &mut std::io::Stdout, opts: &Options, name_wid
 /// Process a key event and return the resulting action.
 /// This is the pure logic extracted for testability.
 fn process_key(key_code: KeyCode, modifiers: KeyModifiers, options: &Options) -> Action {
-    log::info!("Processing key: {:?} with modifiers: {:?}", key_code, modifiers);
+    log::info!("Processing key: {key_code:?} with modifiers: {modifiers:?}");
     if let KeyCode::Char(c) = key_code {
         if c == 'c' && modifiers.contains(KeyModifiers::CONTROL) {
             Action::Cancel
