@@ -85,7 +85,7 @@ fn calculate_name_width(picker: &Picker, opts: &Options) -> usize {
     match picker.description_name_width {
         Fixed(w) => w,
         Never => 0,
-        Auto => opts.iter().map(|item| item.name.len()).max().unwrap_or(0),
+        Auto => opts.iter().map(|item| item.long_label.len()).max().unwrap_or(0),
     }
 }
 
@@ -100,7 +100,7 @@ fn write_current_description(stdout: &mut std::io::Stdout, opts: &Options, _name
     .ok();
     print!(
         "    {:6} {}",
-        item.name,
+        item.long_label,
         item.description.clone().unwrap_or("".to_string())
     )
 }
@@ -112,7 +112,7 @@ fn write_all_descriptions(stdout: &mut std::io::Stdout, opts: &Options, name_wid
         print!(
             "{:1} {:w$} {}",
             selected,
-            item.name,
+            item.long_label,
             item.description.clone().unwrap_or("".to_string()),
             w = name_width
         );
@@ -122,7 +122,7 @@ fn write_all_descriptions(stdout: &mut std::io::Stdout, opts: &Options, name_wid
 /// Process a key event and return the resulting action.
 /// This is the pure logic extracted for testability.
 fn process_key(key_code: KeyCode, modifiers: KeyModifiers, options: &Options) -> Action {
-    log::info!("Processing key: {:?} with modifiers: {:?}", key_code, modifiers);
+    log::info!("Processing key: {key_code:?} with modifiers: {modifiers:?}");
     if let KeyCode::Char(c) = key_code {
         if c == 'c' && modifiers.contains(KeyModifiers::CONTROL) {
             Action::Cancel
@@ -190,8 +190,8 @@ mod tests {
         #[test]
         fn cancel_with_ctrl_c() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .build()
                 .unwrap();
             let action = process_key(KeyCode::Char('c'), KeyModifiers::CONTROL, &options);
@@ -204,8 +204,8 @@ mod tests {
         #[test]
         fn cancel_with_esc() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .build()
                 .unwrap();
             let action = process_key(KeyCode::Esc, KeyModifiers::NONE, &options);
@@ -218,8 +218,8 @@ mod tests {
         #[test]
         fn continue_0() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .build()
                 .unwrap();
             let action = process_key(KeyCode::Char('y'), KeyModifiers::NONE, &options);
@@ -232,8 +232,8 @@ mod tests {
         #[test]
         fn continue_1() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .build()
                 .unwrap();
             let action = process_key(KeyCode::Char('n'), KeyModifiers::NONE, &options);
@@ -246,8 +246,8 @@ mod tests {
         #[test]
         fn continue_unrelated_key() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .current(1)
                 .build()
                 .unwrap();
@@ -261,8 +261,8 @@ mod tests {
         #[test]
         fn confirm() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .current(1)
                 .build()
                 .unwrap();
@@ -276,8 +276,8 @@ mod tests {
         #[test]
         fn with_arrow_up() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .current(1)
                 .build()
                 .unwrap();
@@ -291,8 +291,8 @@ mod tests {
         #[test]
         fn with_arrow_right() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .current(1)
                 .build()
                 .unwrap();
@@ -306,8 +306,8 @@ mod tests {
         #[test]
         fn with_arrow_down() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .current(1)
                 .build()
                 .unwrap();
@@ -321,8 +321,8 @@ mod tests {
         #[test]
         fn with_arrow_left() {
             let options = crate::OptionsBuilder::default()
-                .item(crate::Item::new("Yes", 'y', None))
-                .item(crate::Item::new("No", 'n', None))
+                .item(crate::Item::new_full("Yes", "y", 'y', None))
+                .item(crate::Item::new_full("No", "n", 'n', None))
                 .current(1)
                 .build()
                 .unwrap();
@@ -344,8 +344,8 @@ mod tests {
                 .build()
                 .unwrap();
             let options = OptionsBuilder::default()
-                .item(crate::Item::new("Short", 's', None))
-                .item(crate::Item::new("LongerName", 'l', None))
+                .item(crate::Item::new_full("Short", "s", 's', None))
+                .item(crate::Item::new_full("LongerName", "l", 'l', None))
                 .build()
                 .unwrap();
             let width = crate::routine::calculate_name_width(&picker, &options);
@@ -359,8 +359,8 @@ mod tests {
                 .build()
                 .unwrap();
             let options = OptionsBuilder::default()
-                .item(crate::Item::new("Short", 's', None))
-                .item(crate::Item::new("LongerName", 'l', None))
+                .item(crate::Item::new_full("Short", "s", 's', None))
+                .item(crate::Item::new_full("LongerName", "l", 'l', None))
                 .build()
                 .unwrap();
             let width = crate::routine::calculate_name_width(&picker, &options);
@@ -374,8 +374,8 @@ mod tests {
                 .build()
                 .unwrap();
             let options = OptionsBuilder::default()
-                .item(crate::Item::new("Short", 's', None))
-                .item(crate::Item::new("LongerName", 'l', None))
+                .item(crate::Item::new_full("Short", "s", 's', None))
+                .item(crate::Item::new_full("LongerName", "l", 'l', None))
                 .build()
                 .unwrap();
             let width = crate::routine::calculate_name_width(&picker, &options);
