@@ -12,7 +12,7 @@
 //!
 //! ## Usage
 //! 
-//! Here is just a simplest example of how to use `pick-a-boo` in your Rust project:
+//! Here is just a simple example of how to use `pick-a-boo` in your Rust project:
 //! 
 //! ```rust,no_run
 //! fn main() -> std::io::Result<()> {
@@ -50,112 +50,159 @@ use derive_builder::Builder;
 mod screen;
 mod routine;
 
+#[cfg(test)]
+extern crate self as pick_a_boo;
+
+/// Macro to create an [Item] instance with flexible arguments.
+/// The first positional argument is the long name (label) of the item.
+/// Following arguments can be provided as either positional or named arguments:
+/// 
+/// ## Positional arguments:
+/// 
+/// The number of positional arguments can be from 1 to 4.
+/// 
+/// ```rust
+/// use pick_a_boo::item;
+/// item!("LongName");                                  // only long name
+/// item!("LongName", "ShortName");                     // long name and short name
+/// item!("LongName", "ShortName", "Description");      // long name, short name, and description
+/// item!("LongName", "ShortName", 'k', "Description"); // four positional arguments
+/// ```
+/// 
+/// ## Named arguments:
+/// 
+/// The named arguments can be provided in any order after the first positional argument (long name).
+/// 
+/// ```rust
+/// use pick_a_boo::item;
+/// item!("LongName");                              // only long name
+/// item!("LongName", key = 'k');                   // long name and key
+/// item!("LongName", short = "ShortName");         // long name and short name
+/// item!("LongName", description = "Description"); // long name and description
+/// ```
+///
+/// ## Usage examples:
+/// 
+/// Exhaustive examples of various argument combinations:
+///
+/// ```rust
+/// use pick_a_boo::item;
+/// let a = item!("Alpha");                                  // Item::parse("Alpha")
+/// let b = item!("Beta", "2");                              // Item::new_full("Beta", "2", "2", None)
+/// let c = item!("Gamma", "3", "The third letter");         // Item::new_full("Gamma", "3", '3', Some("The third letter"))
+/// let d = item!("Delta", "4", 'F', "The fourth letter");   // Item::new_full("Delta", "4", 'F', Some("The fourth letter"))
+/// let e = item!("Epsilon", key = 'G');                     // Item::new_full("Epsilon", "G", 'G', None)
+/// let f = item!("Zeta", description = "The sixth letter"); // Item::new_full("Zeta", "z", 'z', Some("The sixth letter"))
+/// let g = item!("Eta", short = "7");                       // Item::new_full("Eta", "7", '7', None)
+/// let h = item!("Theta", short = "A", key = '8');          // Item::new_full("Theta", "A", '8', None)
+/// let i = item!("Iota", short = "A", description = "The nineth letter");
+/// // Item::new_full("Iota", "A", 'A', Some("The nineth letter"))
+/// 
+/// let j = item!("Kappa", short = "10", description = "The tenth letter", key = 'u');
+/// // Item::new_full("Kappa", "10", 'u', Some("The tenth letter"))
+/// 
+/// let k = item!("Lambda", key = 'u', short = "11");        // Item::new_full("Lambda", "11", 'u', None)
+/// 
+/// let l = item!("Mu", key = 'i', short = "12", description = "The twelveth letter");
+/// // Item::new_full("Mu", "12", 'i', Some("The twelveth letter"))
+/// 
+/// let m = item!("Nu", key = 'i', description = "The thirteenth letter", short = "13");
+/// // Item::new_full("Nu", "13", 'i', Some("The thirteenth letter"))
+/// 
+/// let n = item!("Xi", key = 'o', description = "The fourteenth letter");
+/// // Item::new_full("Xi", "o", 'o', Some("The fourteenth letter"))
+/// 
+/// let o = item!("Omicron", short = "15", key = 'u', description = "the fifteenth letter");
+/// // Item::new_full("Omicron", "15", 'u', Some("The fifteenth letter"))
+/// 
+/// let p = item!("Pi", description = "The sixteenth letter", short = "16");
+/// // Item::new_full("Pi", "16", '1', Some("The sixteenth letter"))
+/// 
+/// let q = item!("Rho", description = "The seventeenth letter", key = 'K');
+/// // Item::new_full("Rho", "K", 'K', Some("The seventeenth letter"))
+/// 
+/// let r = item!("Sigma", description = "The eighteenth letter", key = 'K', short = "k");
+/// // Item::new_full("Sigma", "k", 'K', Some("The eighteenth letter"))
+/// 
+/// let s = item!("Tau", description = "The nineteenth letter", short = "k", key = 'K');
+/// // Item::new_full("Tau", "k", 'K', Some("The nineteenth letter"))
+/// 
+/// let i = item!("", description = "empty");        // empty name then key and short are '\0'
+/// ```
+pub use pick_a_boo_macros::item;
+
 /// Item struct represents a selectable option with a name, key, and optional description.
 #[derive(Debug, Clone)]
 pub struct Item {
-    name: String,
-    key: char,
-    description: Option<String>,
-}
-
-/// Macro to create an [Item] instance with flexible arguments.
-/// 
-/// Usage examples:
-/// ```rust
-/// use pick_a_boo::item;
-/// let a = item!("Alpha");                          // key is 'a'
-/// let b = item!("Beta", 'B');                      // key is 'B' (specified takes precedence)
-/// let c = item!("Gamma", 'G', "description");      // three positional arguments
-/// let d = item!("Delta", description = "desc");    // key is 'd'
-/// let e = item!("Epsilon", key = 'x');             // key is 'x'
-/// let f = item!("Zeta", key = 'z', description = "desc");
-/// let g = item!("Eta", description = "first", key = 'E'); // order doesn't matter
-/// let h = item!("", description = "empty");        // empty name → key is '\0'
-/// ```
-#[macro_export]
-macro_rules! item {
-    // ---- named arguments first ----
-
-    // named: name + key[required] + description[optional]
-    ($name:expr, key = $key:expr $(, description = $desc:expr )? ) => {{
-        let __name: ::std::string::String = ($name).into();
-        let __key: ::core::primitive::char = $key;
-        $crate::Item::new(__name, __key, $crate::item!(@desc_opt $( $desc )? ))
-    }};
-
-    // named: name + description[required] + key[optional]
-    ($name:expr, description = $desc:expr $(, key = $key:expr )? ) => {{
-        let __name: ::std::string::String = ($name).into();
-        let __key: ::core::primitive::char = $crate::item!(@key_or_derive __name $( $key )? );
-        $crate::Item::new(__name, __key, ::core::option::Option::Some(($desc).into()))
-    }};
-
-    // ---- positional arguments after named ----
-
-    // positional: name only
-    ($name:expr) => {{
-        $crate::Item::parse($name)
-    }};
-
-    // positional: name and key
-    ($name:expr, $key:expr) => {{
-        let __name: ::std::string::String = ($name).into();
-        let __key: ::core::primitive::char = $key;
-        $crate::Item::new(__name, __key, ::core::option::Option::None)
-    }};
-
-    // positional: name, key, description
-    ($name:expr, $key:expr, $desc:expr) => {{
-        let __name: ::std::string::String = ($name).into();
-        let __key: ::core::primitive::char = $key;
-        $crate::Item::new(__name, __key, ::core::option::Option::Some(($desc).into()))
-    }};
-
-    // helper: optional description
-    (@desc_opt) => { ::core::option::Option::<::std::string::String>::None };
-    (@desc_opt $desc:expr) => { ::core::option::Option::Some(($desc).into()) };
-
-    // helper: if key is specified, use it; otherwise derive from name
-    (@key_or_derive $name_ident:ident) => {{
-        match $name_ident.chars().next() {
-            Some(ch) => ch.to_ascii_lowercase(),
-            None => '\0',
-        }
-    }};
-    (@key_or_derive $name_ident:ident $key:expr) => { $key };
+    pub long_label: String,
+    pub short_label: String,
+    pub key: char,
+    pub description: Option<String>,
 }
 
 impl Item {
     /// Create a new Item instance.
-    pub fn new<S: AsRef<str>>(name: S, key: char, description: Option<S>) -> Self {
+    pub fn new_full<S: AsRef<str>>(long_label: S, short_label: S, key: char, description: Option<S>) -> Self {
+        let long_label = long_label.as_ref().to_string();
+        let short_label = short_label.as_ref().to_string();
+        let description = description.map(|d| d.as_ref().to_string());
+        log::info!("create Item instance with new_full({long_label}, {short_label}, {key}, {description:?})");
         Item {
-            name: name.as_ref().to_string(),
+            long_label,
+            short_label,
             key,
-            description: description.map(|d| d.as_ref().to_string()),
+            description,
         }
+    }
+
+    pub fn new<S: AsRef<str>>(long_label: S, short_label: S, key: char) -> Self {
+        Item::new_full(long_label, short_label, key, None)
     }
 
     /// Parse an item from a string.
     /// The key is derived from the first character of the name, converted to lowercase.
-    /// If uppercase key is desired, use the [`Item::new`] method or the [`item!`] macro.
+    /// If an uppercase key is desired, use the [`Item::new`] method or the [`item!`] macro.
     /// 
-    /// The given string should formatted with an optional description separated by a colon (`:`).
+    /// The given string should be formatted as "LongLabel[(ShortKey)][: Description]".
+    /// If the colon `:` is present, the part after it is treated as the description.
+    /// If not, the description is `None`.
+    /// Also, `ShortKey` is optional and if it is not provided, the `ShortKey` is derived from the first character of the `LongLabel`.
     /// 
     /// ### Example
     /// 
     /// ```rust
     /// use pick_a_boo::Item;
-    /// let item1 = Item::parse("Example");                     //  Item::new("Example", 'e', None)
-    /// let item2 = Item::parse("Test: This is just test");     //  Item::new("Test", 't', Some("This is just test"))
-    /// let item3 = Item::parse("Colon: Its:too:many:colons!"); //  Item::new("Colon", 'c', Some("Its:too:many:colons!"))
+    /// let item1 = Item::parse("Example");                     //  Item::new_full("Example", "e", 'e', None)
+    /// let item2 = Item::parse("Test: This is just test");     //  Item::new_full("Test",    "t", 't', Some("This is just test"))
+    /// let item3 = Item::parse("Colon: Its:too:many:colons!"); //  Item::new_full("Colon",   "c", 'c', Some("Its:too:many:colons!"))
+    /// let item4 = Item::parse("Label(S): With short key");    //  Item::new_full("Label",   "S", 'S', Some("With short key"))
     /// ```
-    pub fn parse<S: AsRef<str>>(input: S) -> Self {
-        let (name, desc) = match input.as_ref().split_once(":") {
-            Some((n, d)) => (n.trim(), Some(d.trim().to_string())),
-            None => (input.as_ref().trim(), None),
+    pub fn parse(input: impl Into<String>) -> Self {
+        let from_string = input.into();
+        let (head, description) = match from_string.find(":") {
+            Some(index) => {
+                let head = from_string[..index].trim_end().to_string();
+                let desc = from_string[index + 1..].trim().to_string();
+                (head, Some(desc))
+            }
+            None => (from_string.to_string(), None),
         };
-        let key = name.chars().next().unwrap_or('\0').to_ascii_lowercase();
-        Item::new(name, key, desc.as_deref())
+        if head.ends_with(")") {
+            if let Some(start) = head.rfind("(") {
+                let long_label = head[..start].trim_end().to_string();
+                let short_label = head[start + 1..head.len() - 1].trim().to_string();
+                let key = short_label.chars().next().unwrap_or('\0').to_ascii_lowercase();
+                Item::new_full(long_label, short_label, key, description)
+            } else {
+                let long_label = head;
+                let key = long_label.chars().next().unwrap_or('\0').to_ascii_lowercase();
+                Item::new_full(long_label, key.to_string(), key, description)
+            }
+        } else {
+            let long_label = head;
+            let key = long_label.chars().next().unwrap_or('\0').to_ascii_lowercase();
+            Item::new_full(long_label, key.to_string(), key, description)
+        }
     }
 }
 
@@ -185,10 +232,10 @@ type ErrBox = Box<dyn std::error::Error + Send + Sync>;
 /// ```rust
 /// use pick_a_boo::{item, Item, OptionsBuilder};
 /// let options = OptionsBuilder::default()
-///     .item(Item::new("Yes", 'y', Some("I love it")))
+///     .item(Item::new_full("Yes", "y", 'y', Some("I love it")))
 ///     .item(item!("So so", description = "I like it, but sometimes it's hard")) 
 ///     .item(item!("Maybe", key = 'm', description = "I haven't tried it yet"))
-///     .item(item!("No", 'n', "I don't like it"))
+///     .item(item!("No", "n", "I don't like it"))
 ///     .current(1) // set the default selected index to 1 ("So so")
 ///     .build().expect("Failed to build Options");
 /// ```
@@ -252,7 +299,7 @@ impl Options {
     /// Helper method to create Options instance from a slice of strings.
     /// Each item of the slice is converted with [`Item::parse`] method.
     pub fn from<S: AsRef<str>>(items: &[S]) -> Result<Self, ErrBox> {
-        let item_vec = items.iter().map(Item::parse).collect::<Vec<_>>();
+        let item_vec = items.iter().map(|s| Item::parse(s.as_ref())).collect::<Vec<_>>();
         validate_option_items(&item_vec, 0)?;
         Ok(Options {
             items: item_vec,
@@ -297,7 +344,7 @@ impl Options {
     }
 
     fn current_name(&self) -> String {
-        self.items[self.current].name.clone()
+        self.items[self.current].long_label.clone()
     }
 
     fn update_current(self, index: usize) -> Self {
@@ -316,7 +363,7 @@ impl std::fmt::Display for Display<'_, '_> {
         let display = self.0.iter().enumerate()
             .map(|(size, item)| {
                 if size == self.0.current {
-                    format!(" {} ", item.name)
+                    format!(" {} ", item.long_label)
                 } else {
                     item.key.to_string()
                 }
@@ -334,10 +381,10 @@ impl std::fmt::Display for Display<'_, '_> {
 /// ```rust
 /// use pick_a_boo::{item, OptionsBuilder};
 /// let opts = OptionsBuilder::default()
-///     .item(item!("Yes", 'y', "I love it"))
+///     .item(item!("Yes", "y", "I love it"))
 ///     .item(item!("So so", description = "I like it, but sometimes it's hard"))
 ///     .item(item!("Maybe", key = 'm', description = "I haven't tried it yet"))
-///     .item(item!("No", 'n', "I don't like it"))
+///     .item(item!("No", "n", "I don't like it"))
 ///     .build().expect("Failed to build Options");
 /// ```
 #[derive(Debug, Clone)]
@@ -516,8 +563,8 @@ impl Picker {
     /// Returns `Ok(Some(true))` for "Yes", `Ok(Some(false))` for "No", and `Ok(None)` if cancelled.
     pub fn yes_or_no(&mut self, prompt: &str, default_yes: bool) -> std::io::Result<Option<bool>> {
         log::info!("Picker yes_or_no with prompt: {prompt}");
-        let yes_item = Item::new("Yes", 'y', None);
-        let no_item = Item::new("No", 'n', None);
+        let yes_item = Item::new_full("Yes", "y", 'y', None);
+        let no_item = Item::new_full("No", "n", 'n', None);
         let options = OptionsBuilder::default()
             .item(yes_item)
             .item(no_item)
@@ -564,12 +611,15 @@ pub fn choose(prompt: &str, options: Options) -> std::io::Result<Option<String>>
         .choose(prompt, options)
 }
 
+#[cfg(test)]
 mod tests {
+    use crate::item;
+
     #[test]
     fn test_optionsbuilder_duplicate_keys() {
         let result = crate::OptionsBuilder::default()
-            .item(item!("Option 1", 'a'))
-            .item(item!("Option 2", 'a')) // duplicate key
+            .item(item!("Option 1", "o", "description 1"))
+            .item(item!("Option 2", "o", "description 2")) // duplicate key
             .build();
         assert!(result.is_err());
     }
@@ -577,8 +627,8 @@ mod tests {
     #[test]
     fn test_optionsbuilder_out_of_bounds_current() {
         let result = crate::OptionsBuilder::default()
-            .item(item!("Option 1", 'a'))
-            .item(item!("Option 2", 'b'))
+            .item(item!("Option 1", "1"))
+            .item(item!("Option 2", "2"))
             .current(10) // out of bounds
             .build();
         assert!(result.is_err());
@@ -601,7 +651,7 @@ mod tests {
     #[test]
     fn test_from_str() {
         let it: crate::Item = "Sample".into();
-        assert_eq!(it.name, "Sample");
+        assert_eq!(it.long_label, "Sample");
         assert_eq!(it.key, 's');
         assert!(it.description.is_none());
     }
@@ -609,87 +659,222 @@ mod tests {
     #[test]
     fn test_from_string() {
         let it: crate::Item = String::from("Example: This is example").into();
-        assert_eq!(it.name, "Example");
+        assert_eq!(it.long_label, "Example");
         assert_eq!(it.key, 'e');
         assert_eq!(it.description.as_deref(), Some("This is example"));
     }
 
     #[test]
-    fn test_item_parse_without_description() {
-        let it = crate::Item::parse("Example");
-        assert_eq!(it.name, "Example");
-        assert_eq!(it.key, 'e');
-        assert!(it.description.is_none());
-    }
-
-    #[test]
-    fn test_item_parse_with_description() {
-        let it = crate::Item::parse("Test: This is just test");
-        assert_eq!(it.name, "Test");
-        assert_eq!(it.key, 't');
-        assert_eq!(it.description.as_deref(), Some("This is just test"));
-    }
-
-    #[test]
     fn test_macro_item_1() {
         let it = item!("Alpha");
-        assert_eq!(it.name, "Alpha");
+        assert_eq!(it.long_label, "Alpha");
+        assert_eq!(it.short_label, "a");
         assert_eq!(it.key, 'a');
         assert!(it.description.is_none());
     }
 
     #[test]
     fn test_macro_item_2() {
-        let it = item!("Beta", description = "The second letter");
-        assert_eq!(it.name, "Beta");
-        assert_eq!(it.key, 'b');
-        assert_eq!(it.description.as_deref(), Some("The second letter"));
+        let it = item!("Beta", "2");
+        assert_eq!(it.long_label, "Beta");
+        assert_eq!(it.short_label, "2");
+        assert_eq!(it.key, '2');
+        assert!(it.description.is_none())
     }
 
     #[test]
     fn test_macro_item_3() {
-        let it = item!("Gamma", key = 'G');
-        assert_eq!(it.name, "Gamma");
-        assert_eq!(it.key, 'G');
-        assert!(it.description.is_none());
+        let it = item!("Gamma", "3", "The third letter");
+        assert_eq!(it.long_label, "Gamma");
+        assert_eq!(it.short_label, "3");
+        assert_eq!(it.key, '3');
+        assert_eq!(it.description.as_deref(), Some("The third letter"));
     }
 
     #[test]
     fn test_macro_item_4() {
-        let it = item!("Delta", key = 'D', description = "The fourth letter");
-        assert_eq!(it.name, "Delta");
-        assert_eq!(it.key, 'D');
+        let it = item!("Delta", "4", 'F', "The fourth letter");
+        assert_eq!(it.long_label, "Delta");
+        assert_eq!(it.short_label, "4");
+        assert_eq!(it.key, 'F');
         assert_eq!(it.description.as_deref(), Some("The fourth letter"));
     }
 
     #[test]
     fn test_macro_item_5() {
-        let it = item!("Epsilon", 'E');
-        assert_eq!(it.name, "Epsilon");
-        assert_eq!(it.key, 'E');
-        assert!(it.description.is_none())
+        let it = item!("Epsilon", key = 'G');
+        assert_eq!(it.long_label, "Epsilon");
+        assert_eq!(it.short_label, "G");
+        assert_eq!(it.key, 'G');
+        assert!(it.description.is_none());
     }
 
     #[test]
     fn test_macro_item_6() {
-        let it = item!("Zeta", 'Z', "The sixth letter");
-        assert_eq!(it.name, "Zeta");
-        assert_eq!(it.key, 'Z');
+        let it = item!("Zeta", description = "The sixth letter");
+        assert_eq!(it.long_label, "Zeta");
+        assert_eq!(it.short_label, "z");
+        assert_eq!(it.key, 'z');
         assert_eq!(it.description.as_deref(), Some("The sixth letter"));
     }
 
     #[test]
     fn test_macro_item_7() {
-        let it = item!("Eta", description = "The seventh letter", key = 'e');
-        assert_eq!(it.name, "Eta");
-        assert_eq!(it.key, 'e');
-        assert_eq!(it.description.as_deref(), Some("The seventh letter"));
+        let it = item!("Eta", short = "7");
+        assert_eq!(it.long_label, "Eta");
+        assert_eq!(it.short_label, "7");
+        assert_eq!(it.key, '7');
+        assert!(it.description.is_none())
+    }
+
+    #[test]
+    fn test_macro_item_8() {
+        let it = item!("Theta", short = "A", key = '8');
+        assert_eq!(it.long_label, "Theta");
+        assert_eq!(it.short_label, "A");
+        assert_eq!(it.key, '8');
+        assert!(it.description.is_none());
+    }
+
+    #[test]
+    fn test_macro_item_9() {
+        let it = item!("Iota", short = "A", description = "The ninth letter");
+        assert_eq!(it.long_label, "Iota");
+        assert_eq!(it.short_label, "A");
+        assert_eq!(it.key, 'A');
+        assert_eq!(it.description.as_deref(), Some("The ninth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_10() {
+        let it = item!("Kappa", short = "10", description = "The tenth letter", key = 'u');
+        assert_eq!(it.long_label, "Kappa");
+        assert_eq!(it.short_label, "10");
+        assert_eq!(it.key, 'u');
+        assert_eq!(it.description.as_deref(), Some("The tenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_11() {
+        let it = item!("Lambda", key = 'u', short = "11");
+        assert_eq!(it.long_label, "Lambda");
+        assert_eq!(it.short_label, "11");
+        assert_eq!(it.key, 'u');
+        assert!(it.description.is_none());
+    }
+
+    #[test]
+    fn test_macro_item_12() {
+        let it = item!("Mu", key = 'i', short = "12", description = "The twelveth letter");
+        assert_eq!(it.long_label, "Mu");
+        assert_eq!(it.short_label, "12");
+        assert_eq!(it.key, 'i');
+        assert_eq!(it.description.as_deref(), Some("The twelveth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_13() { // Nu
+        let it = item!("Nu", key = 'i', description = "The thirteenth letter", short = "13");
+        assert_eq!(it.long_label, "Nu");
+        assert_eq!(it.short_label, "13");
+        assert_eq!(it.key, 'i');
+        assert_eq!(it.description.as_deref(), Some("The thirteenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_14() {
+        let it = item!("Xi", key = 'o', description = "The fourteenth letter");
+        assert_eq!(it.long_label, "Xi");
+        assert_eq!(it.short_label, "o");
+        assert_eq!(it.key, 'o');
+        assert_eq!(it.description.as_deref(), Some("The fourteenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_15() {
+        let it = item!("Omicron", short = "15", key = 'u', description = "The fifteenth letter");
+        assert_eq!(it.long_label, "Omicron");
+        assert_eq!(it.short_label, "15");
+        assert_eq!(it.key, 'u');
+        assert_eq!(it.description.as_deref(), Some("The fifteenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_16() {
+        let it = item!("Pi", description = "The sixteenth letter", short = "16");
+        assert_eq!(it.long_label, "Pi");
+        assert_eq!(it.short_label, "16");
+        assert_eq!(it.key, '1');
+        assert_eq!(it.description.as_deref(), Some("The sixteenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_17() {
+        let it = item!("Rho", description = "The seventeenth letter", key = 'K');
+        assert_eq!(it.long_label, "Rho");
+        assert_eq!(it.short_label, "K");
+        assert_eq!(it.key, 'K');
+        assert_eq!(it.description.as_deref(), Some("The seventeenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_18() {
+        let it = item!("Sigma", description = "The eighteenth letter", key = 'K', short = "k");
+        assert_eq!(it.long_label, "Sigma");
+        assert_eq!(it.short_label, "k");
+        assert_eq!(it.key, 'K');
+        assert_eq!(it.description.as_deref(), Some("The eighteenth letter"));
+    }
+
+    #[test]
+    fn test_macro_item_19() {
+        let it = item!("Tau", description = "The nineteenth letter", short = "k", key = 'K');
+        assert_eq!(it.long_label, "Tau");
+        assert_eq!(it.short_label, "k");
+        assert_eq!(it.key, 'K');
+        assert_eq!(it.description.as_deref(), Some("The nineteenth letter"));
+    }
+
+    #[test]
+    fn test_macro_parse_with_short_and_description() {
+        let it = item!("Upsilon(20): The twentieth letter");
+        assert_eq!(it.long_label, "Upsilon");
+        assert_eq!(it.short_label, "20");
+        assert_eq!(it.key, '2');
+        assert_eq!(it.description.as_deref(), Some("The twentieth letter"));
+    }
+
+    #[test]
+    fn test_item_parse_without_description() {
+        let it = crate::Item::parse("Phi");
+        assert_eq!(it.long_label, "Phi");
+        assert_eq!(it.short_label, "p");
+        assert_eq!(it.key, 'p');
+        assert!(it.description.is_none());
+    }
+
+    #[test]
+    fn test_item_parse_with_description() {
+        let it = crate::Item::parse("Chi: This is just test");
+        assert_eq!(it.long_label, "Chi");
+        assert_eq!(it.short_label, "c");
+        assert_eq!(it.key, 'c');
+        assert_eq!(it.description.as_deref(), Some("This is just test"));
+    }
+
+    #[test]
+    fn test_item_parse_with_short_without_description() {
+        let it = crate::Item::parse("Psi(Isp)");
+        assert_eq!(it.long_label, "Psi");
+        assert_eq!(it.short_label, "Isp");
+        assert_eq!(it.key, 'i');
+        assert!(it.description.is_none());
     }
 
     #[test]
     fn test_macro_item_with_empty_name() {
         let it = item!("");
-        assert_eq!(it.name, "");
+        assert_eq!(it.long_label, "");
         assert_eq!(it.key, '\0');
         assert!(it.description.is_none())
     }
