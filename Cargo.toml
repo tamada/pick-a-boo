@@ -1,6 +1,6 @@
 [package]
 name = "pick-a-boo"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2024"
 authors = [
     "Haruaki Tamada <tamada@users.noreply.github.com>"
