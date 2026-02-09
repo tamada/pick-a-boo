@@ -9,7 +9,7 @@ description = "A simple options picker library for the CLI"
 license = "MIT"
 readme = "README.md"
 repository = "https://github.com/tamada/pick-a-boo"
-keywords = ["yes-or-no", "cli", "options", "choices", "question", "ask" ]
+keywords = ["yes-or-no", "cli", "options", "choices", "question" ]
 categories = ["command-line-interface", "command-line-utilities"]
 
 [dependencies]
